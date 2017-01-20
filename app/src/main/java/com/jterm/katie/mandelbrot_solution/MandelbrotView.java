@@ -27,6 +27,8 @@ import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
 
+import java.util.Arrays;
+
 public class MandelbrotView extends View {
 
     private static final double X_MAX = 1;
@@ -38,6 +40,8 @@ public class MandelbrotView extends View {
     private double mXMax = X_MAX;
     private double mYMin = Y_MIN;
     private double mYMax = Y_MAX;
+    private double mXRange = X_MAX - X_MIN;
+    private double mYRange = Y_MAX - Y_MIN;
 
     private Paint mBackgroundPaint;
     private Paint mPaint;
@@ -56,32 +60,29 @@ public class MandelbrotView extends View {
         init();
     }
 
-    public MandelbrotView(Context context, AttributeSet attrs, int defStyleAttr) {
+    public MandelbrotView(Context context, AttributeSet attrs, int
+            defStyleAttr) {
         super(context, attrs, defStyleAttr);
         init();
     }
 
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
-    public MandelbrotView(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
+    public MandelbrotView(Context context, AttributeSet attrs, int
+            defStyleAttr, int defStyleRes) {
         super(context, attrs, defStyleAttr, defStyleRes);
         init();
     }
 
     private void init() {
         mBackgroundPaint = new Paint();
-        mBackgroundPaint.setColor(getResources().getColor(R.color.background_color));
+        mBackgroundPaint.setColor(getResources().getColor(R.color
+                .background_color));
 
         mPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     }
 
-    @Override
-    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        if (widthMeasureSpec == 0 || heightMeasureSpec == 0) {
-            super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-        }
-        int size = Math.max(widthMeasureSpec, heightMeasureSpec);
-        super.onMeasure(size, size);
-    }
+
+
 
     public void reset(int depth) {
         mMaxDepth = depth;
@@ -89,6 +90,8 @@ public class MandelbrotView extends View {
         mXMax = X_MAX;
         mYMin = Y_MIN;
         mYMax = Y_MAX;
+        mXRange = X_MAX - X_MIN;
+        mYRange = Y_MAX - Y_MIN;
         initializeColors();
         postInvalidate();
     }
@@ -110,9 +113,41 @@ public class MandelbrotView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         canvas.drawRect(0, 0, getWidth(), getHeight(), mBackgroundPaint);
+
+        float dotSize = getWidth() / mNumPoints;
+
+        for (int x = 0; x < mNumPoints; x++) {
+            double mX = (x * 1. / mNumPoints) * mXRange + mXMin;
+            float px = x * dotSize;
+            for (int y = 0; y < mNumPoints; y++) {
+                // convert point to mandelbrot
+                double mY = (y * 1. / mNumPoints) * mYRange + mYMin;
+                int color = getMandelbrotColor(mX, mY);
+                mPaint.setColor(color);
+                canvas.drawCircle(px, y * dotSize, dotSize, mPaint);
+            }
+        }
     }
 
+    /**
+     * Mandelbrot:
+     *
+     * Z_0 = (mX, mY)
+     * Z_n+1 = Z_n * Z_n + Z_0
+     *
+     */
     private int getMandelbrotColor(double mX, double mY) {
-        return mColors[0];
+        double zx = mX;
+        double zy = mY;
+        int depth = 0;
+
+        while (depth < mMaxDepth && ((zx * zx) + (zy * zy) < 4)) {
+            double tx = zx * zx - zy * zy + mX;
+            zy = 2 * zx * zy + mY;
+            zx = tx;
+            depth++;
+        }
+
+        return mColors[depth];
     }
 }
